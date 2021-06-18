@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> // Para usar strings
+#include <math.h>
 
 #ifdef WIN32
 #include <windows.h> // Apenas para Windows
@@ -86,9 +87,59 @@ void seamcarve(int targetWidth)
 
     for (int y = 0; y < target->height; y++)
     {
-        for (int x = 0; x < targetW; x++)
+        for (int x = 0; x < targetWidth; x++)
+        {
+            int rx, gx, bx, ry, gy, by, deltax, deltay, deltat;
+
+            if (x == 0)
+            {
+                rx = ptr[y][x + 1].r - ptr[y][targetWidth].r;
+                gx = ptr[y][x + 1].g - ptr[y][targetWidth].g;
+                bx = ptr[y][x + 1].b - ptr[y][targetWidth].b;
+            }
+            else if (x + 1 == targetWidth)
+            {
+                rx = ptr[y][0].r - ptr[y][x - 1].r;
+                gx = ptr[y][0].g - ptr[y][x - 1].g;
+                bx = ptr[y][0].b - ptr[y][x - 1].b;
+            }
+            else
+            {
+                rx = ptr[y][x + 1].r - ptr[y][x - 1].r;
+                gx = ptr[y][x + 1].g - ptr[y][x - 1].g;
+                bx = ptr[y][x + 1].b - ptr[y][x - 1].b;
+            }
+
+            if (y == 0)
+            {
+                ry = ptr[y + 1][x].b - ptr[target->height][x].b;
+                gy = ptr[y + 1][x].b - ptr[target->height][x].b;
+                by = ptr[y + 1][x].b - ptr[target->height][x].b;
+            }
+            else if (y + 1 == target->height)
+            {
+                ry = ptr[0][x].b - ptr[y - 1][x].b;
+                gy = ptr[0][x].b - ptr[y - 1][x].b;
+                by = ptr[0][x].b - ptr[y - 1][x].b;
+            }
+            else
+            {
+                ry = ptr[y + 1][x].b - ptr[y - 1][x].b;
+                gy = ptr[y + 1][x].b - ptr[y - 1][x].b;
+                by = ptr[y + 1][x].b - ptr[y - 1][x].b;
+            }
+
+            deltax = rx * rx + gx * gx + bx * bx;
+            deltay = ry * ry + gy * gy + by * by;
+            deltat = deltax + deltay;
+        }
+    }
+
+    for (int y = 0; y < target->height; y++)
+    {
+        for (int x = 0; x < targetWidth; x++)
             ptr[y][x].r = ptr[y][x].g = 255;
-        for (int x = targetW; x < target->width; x++)
+        for (int x = targetWidth; x < target->width; x++)
             ptr[y][x].r = ptr[y][x].g = 0;
     }
     // Chame uploadTexture a cada vez que mudar
