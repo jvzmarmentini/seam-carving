@@ -20,6 +20,8 @@
 // SOIL é a biblioteca para leitura das imagens
 #include <SOIL.h>
 
+#define STEP 1
+
 // Um pixel RGB (24 bits)
 typedef struct
 {
@@ -80,8 +82,8 @@ void load(char *name, Img *pic)
 // Implemente AQUI o seu algoritmo
 void seamcarve(int targetWidth)
 {
+    printf("%d\n", targetWidth);
     // Aplica o algoritmo e gera a saida em target->img...
-
     RGB8(*ptr)
     [target->width] = (RGB8(*)[target->width])target->img;
 
@@ -112,20 +114,20 @@ void seamcarve(int targetWidth)
 
             if (y == 0)
             {
-                ry = ptr[y + 1][x].b - ptr[target->height][x].b;
-                gy = ptr[y + 1][x].b - ptr[target->height][x].b;
+                ry = ptr[y + 1][x].r - ptr[target->height][x].r;
+                gy = ptr[y + 1][x].g - ptr[target->height][x].g;
                 by = ptr[y + 1][x].b - ptr[target->height][x].b;
             }
             else if (y + 1 == target->height)
             {
-                ry = ptr[0][x].b - ptr[y - 1][x].b;
-                gy = ptr[0][x].b - ptr[y - 1][x].b;
+                ry = ptr[0][x].r - ptr[y - 1][x].r;
+                gy = ptr[0][x].g - ptr[y - 1][x].g;
                 by = ptr[0][x].b - ptr[y - 1][x].b;
             }
             else
             {
-                ry = ptr[y + 1][x].b - ptr[y - 1][x].b;
-                gy = ptr[y + 1][x].b - ptr[y - 1][x].b;
+                ry = ptr[y + 1][x].r - ptr[y - 1][x].r;
+                gy = ptr[y + 1][x].g - ptr[y - 1][x].g;
                 by = ptr[y + 1][x].b - ptr[y - 1][x].b;
             }
 
@@ -135,6 +137,7 @@ void seamcarve(int targetWidth)
         }
     }
 
+    printf("CALCULOU GRADIENTE\n");
     for (int y = 0; y < target->height; y++)
     {
         for (int x = 0; x < targetWidth; x++)
@@ -144,6 +147,8 @@ void seamcarve(int targetWidth)
     }
     // Chame uploadTexture a cada vez que mudar
     // a imagem (pic[2])
+
+    printf("CALCULOU ALGUMA COISA\n");
     uploadTexture();
     glutPostRedisplay();
 }
@@ -270,13 +275,13 @@ void arrow_keys(int a_keys, int x, int y)
     switch (a_keys)
     {
     case GLUT_KEY_RIGHT:
-        if (targetW <= pic[2].width - 10)
-            targetW += 10;
+        if (targetW <= pic[2].width - STEP)
+            targetW += STEP;
         seamcarve(targetW);
         break;
     case GLUT_KEY_LEFT:
-        if (targetW > 10)
-            targetW -= 10;
+        if (targetW > STEP)
+            targetW -= STEP;
         seamcarve(targetW);
         break;
     default:
