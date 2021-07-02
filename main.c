@@ -65,6 +65,9 @@ Img *target;
 // Imagem selecionada (0,1,2)
 int sel;
 
+const int INT_MAX = 1600000;
+const int INT_MIN = -1000;
+
 // Carrega uma imagem para a struct Img
 void load(char *name, Img *pic)
 {
@@ -87,10 +90,14 @@ void seamcarve(int targetWidth)
     [target->width] = (RGB8(*)[target->width])target->img;
 
     RGB8(*ptr_source)
-    [target->width] = (RGB8(*)[target->width])source->img;
+    [source->width] = (RGB8(*)[source->width])source->img;
+
+    RGB8(*ptr_mask)
+    [mask->width] = (RGB8(*)[mask->width])mask->img;
 
     int energia[target->height][targetWidth];
 
+    // Calculo de energia
     for (int y = 0; y < target->height; y++)
     {
         for (int x = 0; x < targetWidth; x++)
@@ -139,73 +146,29 @@ void seamcarve(int targetWidth)
             deltax = rx * rx + gx * gx + bx * bx;
             deltay = ry * ry + gy * gy + by * by;
             energia[y][x] = deltax + deltay;
-            // printf("%d \t", energia[y][x]);
         }
-        // printf("\n");
     }
-    // printf("\n");
-    for (int y = 1; y < target->height; y++)
-    {
-        for (int x = 0; x < targetWidth; x++)
-        {
-            int tmp = energia[y][x] + energia[y - 1][x];
 
-            if ((x != 0) && (energia[y][x] + energia[y - 1][x - 1] < tmp))
-                tmp = energia[y][x] + energia[y - 1][x - 1];
-
-            if ((x != targetWidth - 1) && (energia[y][x] + energia[y - 1][x + 1] < tmp))
-                tmp = energia[y][x] + energia[y - 1][x + 1];
-
-            energia[y][x] = tmp;
-            // printf("%d \t", energia[y][x]);
-        }
-        // printf("\n");
-    }
-    // printf("\n");
-
-    int path[target->height];
-    int posX = 0;
-    path[target->height - 1] = energia[target->height - 1][posX];
-    for (int i = 1; i < targetWidth; i++)
-    {
-        if (energia[target->height - 1][i] < path[target->height - 1])
-        {
-            path[target->height - 1] = energia[target->height - 1][i];
-            posX = i;
-        }
-        // printf("%d %d\t", path[target->height - 1], posX);
-    }
-    // printf("\n");
-
-    for (int posY = target->height - 1; posY > 0; posY--)
-    {
-        int tmp = energia[posY - 1][posX];
-
-        if ((posX != 0) && (energia[posY - 1][posX - 1] < tmp))
-        {
-            tmp = energia[posY - 1][posX - 1];
-            posX = posX - 1;
-        }
-
-        if ((posX != targetWidth - 1) && (energia[posY - 1][posX + 1] < tmp))
-        {
-            tmp = energia[posY - 1][posX + 1];
-            posX = posX + 1;
-        }
-
-        path[posY - 1] = posX;
-        // printf("path[%d]: %d\n", posY - 1, path[posY - 1]);
-    }
+    // Máscara
 
     for (int y = 0; y < target->height; y++)
     {
-        for (int x = path[y] + 1; x < targetWidth; x++)
+        for (int x = 0; x < targetWidth; x++)
         {
-            ptr_source[y][x - 1] = ptr_source[y][x];
+            if (ptr_mask[y][x].r < 15 && ptr_mask[y][x].g > 220 && ptr_mask[y][x].b < 15)
+            {
+                energia[y][x] = INT_MAX;
+            }
+            else if (ptr_mask[y][x].r > 220 && ptr_mask[y][x].g < 15 && ptr_mask[y][x].b < 15)
+            {
+                energia[y][x] = INT_MIN;
+            }
+            // printf("%d\t", energia[y][x]);
         }
         // printf("\n");
     }
-    // printf("\n");
+
+    // Calculo de acumulo de energia
     for (int y = 1; y < target->height; y++)
     {
         for (int x = 0; x < targetWidth; x++)
@@ -219,12 +182,10 @@ void seamcarve(int targetWidth)
                 tmp = energia[y][x] + energia[y - 1][x + 1];
 
             energia[y][x] = tmp;
-            // printf("%d \t", energia[y][x]);
         }
-        // printf("\n");
     }
-    // printf("\n");
 
+    // melhor caminho
     int path[target->height];
     int posX = 0;
     path[target->height - 1] = energia[target->height - 1][posX];
@@ -235,10 +196,7 @@ void seamcarve(int targetWidth)
             path[target->height - 1] = energia[target->height - 1][i];
             posX = i;
         }
-        // printf("%d %d\t", path[target->height - 1], posX);
     }
-    // printf("\n");
-
     for (int posY = target->height - 1; posY > 0; posY--)
     {
         int tmp = energia[posY - 1][posX];
@@ -256,9 +214,9 @@ void seamcarve(int targetWidth)
         }
 
         path[posY - 1] = posX;
-        // printf("path[%d]: %d\n", posY - 1, path[posY - 1]);
     }
 
+    // remove seam
     for (int y = 0; y < target->height; y++)
     {
         for (int x = path[y] + 1; x < targetWidth; x++)
