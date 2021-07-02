@@ -1,5 +1,12 @@
 {
     "files.associations": {
-        "math.h": "c"
+        "*.tpl": "html",
+        "math.h": "c",
+        "algorithm": "c",
+        "__locale": "c",
+        "__bit_reference": "c",
+        "bitset": "c",
+        "chrono": "c",
+        "unordered_map": "c"
     }
 }
