@@ -203,7 +203,27 @@ void seamcarve(int targetWidth)
         {
             ptr_source[y][x - 1] = ptr_source[y][x];
         }
+        printf("\n");
     }
+    printf("\n");
+    for (int y = 1; y < target->height; y++)
+    {
+        for (int x = 0; x < targetWidth; x++)
+        {
+            int tmp = energia[y][x] + energia[y - 1][x];
+
+            if ((x != 0) && (energia[y][x] + energia[y - 1][x - 1] < tmp))
+                tmp = energia[y][x] + energia[y - 1][x - 1];
+
+            if ((x != targetWidth - 1) && (energia[y][x] + energia[y - 1][x + 1] < tmp))
+                tmp = energia[y][x] + energia[y - 1][x + 1];
+
+            energia[y][x] = tmp;
+            printf("%d \t", energia[y][x]);
+        }
+        printf("\n");
+    }
+    printf("\n");
 
     for (int y = 0; y < target->height; y++)
     {
