@@ -20,6 +20,8 @@
 // SOIL é a biblioteca para leitura das imagens
 #include <SOIL.h>
 
+#define STEP 1
+
 // Um pixel RGB (24 bits)
 typedef struct
 {
@@ -81,66 +83,142 @@ void load(char *name, Img *pic)
 void seamcarve(int targetWidth)
 {
     // Aplica o algoritmo e gera a saida em target->img...
-
     RGB8(*ptr)
     [target->width] = (RGB8(*)[target->width])target->img;
+
+    RGB8(*ptr_source)
+    [target->width] = (RGB8(*)[target->width])source->img;
+
+    int energia[target->height][targetWidth];
 
     for (int y = 0; y < target->height; y++)
     {
         for (int x = 0; x < targetWidth; x++)
         {
+
             int rx, gx, bx, ry, gy, by, deltax, deltay, deltat;
 
             if (x == 0)
             {
-                rx = ptr[y][x + 1].r - ptr[y][targetWidth].r;
-                gx = ptr[y][x + 1].g - ptr[y][targetWidth].g;
-                bx = ptr[y][x + 1].b - ptr[y][targetWidth].b;
+                rx = ptr_source[y][x + 1].r - ptr_source[y][targetWidth - 1].r;
+                gx = ptr_source[y][x + 1].g - ptr_source[y][targetWidth - 1].g;
+                bx = ptr_source[y][x + 1].b - ptr_source[y][targetWidth - 1].b;
             }
-            else if (x + 1 == targetWidth)
+            else if (x == targetWidth - 1)
             {
-                rx = ptr[y][0].r - ptr[y][x - 1].r;
-                gx = ptr[y][0].g - ptr[y][x - 1].g;
-                bx = ptr[y][0].b - ptr[y][x - 1].b;
+                rx = ptr_source[y][0].r - ptr_source[y][x - 1].r;
+                gx = ptr_source[y][0].g - ptr_source[y][x - 1].g;
+                bx = ptr_source[y][0].b - ptr_source[y][x - 1].b;
             }
             else
             {
-                rx = ptr[y][x + 1].r - ptr[y][x - 1].r;
-                gx = ptr[y][x + 1].g - ptr[y][x - 1].g;
-                bx = ptr[y][x + 1].b - ptr[y][x - 1].b;
+                rx = ptr_source[y][x + 1].r - ptr_source[y][x - 1].r;
+                gx = ptr_source[y][x + 1].g - ptr_source[y][x - 1].g;
+                bx = ptr_source[y][x + 1].b - ptr_source[y][x - 1].b;
             }
 
             if (y == 0)
             {
-                ry = ptr[y + 1][x].b - ptr[target->height][x].b;
-                gy = ptr[y + 1][x].b - ptr[target->height][x].b;
-                by = ptr[y + 1][x].b - ptr[target->height][x].b;
+                ry = ptr_source[y + 1][x].r - ptr_source[target->height - 1][x].r;
+                gy = ptr_source[y + 1][x].g - ptr_source[target->height - 1][x].g;
+                by = ptr_source[y + 1][x].b - ptr_source[target->height - 1][x].b;
             }
-            else if (y + 1 == target->height)
+            else if (y == target->height - 1)
             {
-                ry = ptr[0][x].b - ptr[y - 1][x].b;
-                gy = ptr[0][x].b - ptr[y - 1][x].b;
-                by = ptr[0][x].b - ptr[y - 1][x].b;
+                ry = ptr_source[0][x].r - ptr_source[y - 1][x].r;
+                gy = ptr_source[0][x].g - ptr_source[y - 1][x].g;
+                by = ptr_source[0][x].b - ptr_source[y - 1][x].b;
             }
             else
             {
-                ry = ptr[y + 1][x].b - ptr[y - 1][x].b;
-                gy = ptr[y + 1][x].b - ptr[y - 1][x].b;
-                by = ptr[y + 1][x].b - ptr[y - 1][x].b;
+                ry = ptr_source[y + 1][x].r - ptr_source[y - 1][x].r;
+                gy = ptr_source[y + 1][x].g - ptr_source[y - 1][x].g;
+                by = ptr_source[y + 1][x].b - ptr_source[y - 1][x].b;
             }
 
             deltax = rx * rx + gx * gx + bx * bx;
             deltay = ry * ry + gy * gy + by * by;
-            deltat = deltax + deltay;
+            energia[y][x] = deltax + deltay;
+            // printf("%d \t", energia[y][x]);
+        }
+        // printf("\n");
+    }
+    // printf("\n");
+    for (int y = 1; y < target->height; y++)
+    {
+        for (int x = 0; x < targetWidth; x++)
+        {
+            int tmp = energia[y][x] + energia[y - 1][x];
+
+            if ((x != 0) && (energia[y][x] + energia[y - 1][x - 1] < tmp))
+                tmp = energia[y][x] + energia[y - 1][x - 1];
+
+            if ((x != targetWidth - 1) && (energia[y][x] + energia[y - 1][x + 1] < tmp))
+                tmp = energia[y][x] + energia[y - 1][x + 1];
+
+            energia[y][x] = tmp;
+            // printf("%d \t", energia[y][x]);
+        }
+        // printf("\n");
+    }
+    // printf("\n");
+
+    int path[target->height];
+    int posX = 0;
+    path[target->height - 1] = energia[target->height - 1][posX];
+    for (int i = 1; i < targetWidth; i++)
+    {
+        if (energia[target->height - 1][i] < path[target->height - 1])
+        {
+            path[target->height - 1] = energia[target->height - 1][i];
+            posX = i;
+        }
+        // printf("%d %d\t", path[target->height - 1], posX);
+    }
+    // printf("\n");
+
+    for (int posY = target->height - 1; posY > 0; posY--)
+    {
+        int tmp = energia[posY - 1][posX];
+
+        if ((posX != 0) && (energia[posY - 1][posX - 1] < tmp))
+        {
+            tmp = energia[posY - 1][posX - 1];
+            posX = posX - 1;
+        }
+
+        if ((posX != targetWidth - 1) && (energia[posY - 1][posX + 1] < tmp))
+        {
+            tmp = energia[posY - 1][posX + 1];
+            posX = posX + 1;
+        }
+
+        path[posY - 1] = posX;
+        // printf("path[%d]: %d\n", posY - 1, path[posY - 1]);
+    }
+
+    for (int y = 0; y < target->height; y++)
+    {
+        for (int x = path[y] + 1; x < targetWidth; x++)
+        {
+            ptr_source[y][x - 1] = ptr_source[y][x];
         }
     }
 
     for (int y = 0; y < target->height; y++)
     {
         for (int x = 0; x < targetWidth; x++)
-            ptr[y][x].r = ptr[y][x].g = 255;
+        {
+            ptr[y][x].r = ptr_source[y][x].r;
+            ptr[y][x].g = ptr_source[y][x].g;
+            ptr[y][x].b = ptr_source[y][x].b;
+        }
         for (int x = targetWidth; x < target->width; x++)
-            ptr[y][x].r = ptr[y][x].g = 0;
+        {
+            ptr[y][x].r = ptr[y][x].r = 0;
+            ptr[y][x].g = ptr[y][x].g = 0;
+            ptr[y][x].b = ptr[y][x].b = 0;
+        }
     }
     // Chame uploadTexture a cada vez que mudar
     // a imagem (pic[2])
@@ -270,13 +348,13 @@ void arrow_keys(int a_keys, int x, int y)
     switch (a_keys)
     {
     case GLUT_KEY_RIGHT:
-        if (targetW <= pic[2].width - 10)
-            targetW += 10;
+        if (targetW <= pic[2].width - STEP)
+            targetW += STEP;
         seamcarve(targetW);
         break;
     case GLUT_KEY_LEFT:
-        if (targetW > 10)
-            targetW -= 10;
+        if (targetW > STEP)
+            targetW -= STEP;
         seamcarve(targetW);
         break;
     default:
